@@ -6,27 +6,19 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt,pyqtSignal
 from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import QLabel
 from setting import Setting
+from PyQt5.QtGui import QIntValidator, QDoubleValidator, QRegExpValidator, QValidator
 
-# Client code
-def main():
-    """Main function."""
-    # Create an instance of QApplication
-    pycalc = QApplication(sys.argv)
-    # Show the calculator's GUI
-    view = main_window()
-    view.show()
-    # Execute the calculator's main loop
-    sys.exit(pycalc.exec_())
 
-# Create a subclass of QMainWindow to setup the calculator's GUI
 class Ui_MainWindow(object):
+    
+
     def setupUi(self, MainWindow):
         if MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
@@ -47,6 +39,12 @@ class Ui_MainWindow(object):
         self.value_line_edit_rate.move(120, 60)
         self.value_line_edit_rate.setText('0.2')
         self.value_line_edit_rate.adjustSize()
+        self.value_line_edit_rate.setMaxLength(8)
+        pDoubleValidator = QDoubleValidator(self)
+        pDoubleValidator.setNotation(QDoubleValidator.StandardNotation)
+        pDoubleValidator.setDecimals(4)
+        self.value_line_edit_rate.setValidator(pDoubleValidator)
+
         # label year text
         self.label_year = QLabel(self)
         self.label_year.setText('Год')
@@ -57,11 +55,17 @@ class Ui_MainWindow(object):
         self.value_line_edit_year.move(120, 90)
         self.value_line_edit_year.setText('2050')
         self.value_line_edit_year.adjustSize()
+        self.value_line_edit_year.setMaxLength(4)
+        pIntValidator = QIntValidator(self)
+        #pIntValidator.setRange(2020, 2050)
+        self.value_line_edit_year.setValidator(pIntValidator)
+
         # button
         self.button = QPushButton('Расчёт', self)
         #self.button.clicked.connect(self.button1_clicked)
         self.button.resize(200,32)
         self.button.move(50, 120) 
+
         # Display
         self.display = QLineEdit(self)
         self.display.move(50, 10)
@@ -74,7 +78,7 @@ class EchoClientProtocol(Setting):
     def __init__(self):
         super(EchoClientProtocol, self).__init__()
         self.connection_made()
-
+        
     def connection_made(self):
         self.socket.connect(self.host_adress)
 
@@ -89,7 +93,6 @@ class EchoClientProtocol(Setting):
         self.socket.send(str.encode(message))
 
 
-
 class main_window(QMainWindow, Ui_MainWindow):
     protocol: EchoClientProtocol
 
@@ -97,30 +100,69 @@ class main_window(QMainWindow, Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
         self.button.clicked.connect(self.button_handler)
+        self.button.setAutoDefault(True)
+        self.value_line_edit_year.textChanged.connect(self.line_edit_year_handler)
+        self.value_line_edit_rate.textChanged.connect(self.line_edit_rate_handler)
         self.build_protocol()
+        
+
+    def line_edit_year_handler(self):
+        try:
+            if 2020 <= int(self.value_line_edit_year.text()) <= 2050:
+                self.button.setEnabled(True)
+            else:
+                self.button.setEnabled(False)
+        except ValueError:
+            self.button.setEnabled(False)
+    def line_edit_rate_handler(self):
+        try:
+            if -1 <= float(self.value_line_edit_rate.text()) <= 1:
+                self.button.setEnabled(True)
+            else:
+                self.button.setEnabled(False)
+        except ValueError:
+            self.button.setEnabled(False)
 
     def button_handler(self):
         print("Button 1 clicked")
-        npv = self.requests_data_to_server()
-        self.append_text(str(npv))
+        if self.protocol is not None:
+            npv = self.requests_data_to_server()
+            self.append_text(str(npv))
 
     def append_text(self, content: str):
         self.display.setText(content)
 
     def requests_data_to_server(self):
-        rate = self.value_line_edit_rate.text()
-        year = self.value_line_edit_year.text()
+        rate = float(self.value_line_edit_rate.text())
+        year = int(self.value_line_edit_year.text())
         self.protocol.send_data("\n".join([str(rate), str(year)]))
         returned_npv = self.protocol.data_received()
         return returned_npv
 
+
     def closeEvent(self, event):
-        self.protocol.close_connection()
+        if self.protocol is not None:
+            self.protocol.close_connection()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return:
+            self.button_handler()
 
     def build_protocol(self):
-        self.protocol = EchoClientProtocol()
-        return self.protocol
-    
+        try:
+            self.protocol = EchoClientProtocol()
+            self.append_text("Подключен к серверу")
+            return self.protocol
+        except ConnectionRefusedError:
+            self.protocol = None
+            self.append_text("Нет соединения с сервером")
+            return self.protocol
+        
+def main():
+    pycalc = QApplication(sys.argv)
+    view = main_window()
+    view.show()
+    sys.exit(pycalc.exec_())
 
 if __name__ == '__main__':
     main()

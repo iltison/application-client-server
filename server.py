@@ -11,7 +11,7 @@ class Server(Setting):
     def __init__(self):
         super(Server, self).__init__()
         self.users = []
-        self.df = self.loading_dataframe('test/Расчет NPV.XLSX')
+        self.df = self.loading_dataframe('Расчет NPV.XLSX')
 
     def set_up(self):
         self.socket.bind(self.host_adress)
