@@ -2,7 +2,7 @@ import socket
 
 class Setting():
     def __init__(self):
-
+        self.filename = 'Расчет NPV.XLSX'
         self.__host = '127.0.0.1'
         self.__port = 1233
         self.host_adress = (self.__host, self.__port)

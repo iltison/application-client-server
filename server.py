@@ -8,18 +8,25 @@ from setting import Setting
 
 
 class Server(Setting):
+    """
+    Класс является подклассом, унаследованным от класса Setting, который содержит создание сокета TCP и данных настроек
+    """
     def __init__(self):
         super(Server, self).__init__()
-        self.users = []
-        self.df = self.loading_dataframe('Расчет NPV.XLSX')
+        self.df = self.loading_dataframe(self.filename)
 
     def set_up(self):
+        """
+        Функция для создания прослушки TCP
+        """
         self.socket.bind(self.host_adress)
         self.socket.listen(5)
-        #self.socket.setblocking(False)
         print("Server is listening")
 
     def listen_socket(self, listened_socket=None):
+        """
+        Функция для прослушивания запроса TCP
+        """
         while True:
             try:
                 data = listened_socket.recv(2048)
@@ -32,14 +39,16 @@ class Server(Setting):
                 listened_socket.sendall(str.encode(npv))
 
             except ValueError:
-                listened_socket.sendall(str.encode('Error'))
+                listened_socket.sendall(str.encode('ValueError'))
             except ConnectionAbortedError:
-                print('клиент вышел')
                 listened_socket.close()
                 return 
         listened_socket.close()
                 
     def accept_sockets(self):
+        """
+        Функция для принятия запрсов от клиента
+        """
         while True:
             Client, address = self.socket.accept()
             print('Connected to: ' + address[0] + ':' + str(address[1]))
@@ -48,12 +57,18 @@ class Server(Setting):
         self.socket.close()
 
     def loading_dataframe(self,filename):
+        """
+        Функция для загрузки данных 
+        """
         df = pd.read_excel(filename,sheet_name='справочник')
         df['год'] = pd.to_datetime(df['год'],format='%Y').dt.year
         df['чистый денежный поток'] = df['доход'] - df['затраты']
         return df 
 
     def getting_npv(self, year, rate):
+        """
+        Функция для получения значения NPV для конкретного года 
+        """
         mask = (self.df['год'] <= year)
         slice_df = self.df.loc[mask]
         list_npv = np.zeros(len(slice_df))
