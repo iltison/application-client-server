@@ -1,6 +1,6 @@
 import socket
 import os
-from _thread import *
+from _thread import start_new_thread
 
 import numpy as np
 import pandas as pd
@@ -49,21 +49,23 @@ class Server(Setting):
         """
         Функция для принятия запрсов от клиента
         """
-        while True:
-            Client, address = self.socket.accept()
-            print('Connected to: ' + address[0] + ':' + str(address[1]))
-            self.users.append(Client)
-            start_new_thread(self.listen_socket, (Client, ))
-        self.socket.close()
+        try:
+            while True:
+                Client, address = self.socket.accept()
+                print('Connected to: ' + address[0] + ':' + str(address[1]))
+                start_new_thread(self.listen_socket, (Client, ))
+            self.socket.close()
+        except:
+            return
 
     def loading_dataframe(self,filename):
         """
         Функция для загрузки данных 
         """
-        df = pd.read_excel(filename,sheet_name='справочник')
-        df['год'] = pd.to_datetime(df['год'],format='%Y').dt.year
-        df['чистый денежный поток'] = df['доход'] - df['затраты']
-        return df 
+        data = pd.read_excel(filename,sheet_name='справочник')
+        data['год'] = pd.to_datetime(data['год'],format='%Y').dt.year
+        data['чистый денежный поток'] = data['доход'] - data['затраты']
+        return data 
 
     def getting_npv(self, year, rate):
         """

@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt,pyqtSignal
 from PyQt5.QtGui import QIntValidator, QDoubleValidator, QRegExpValidator, QValidator
 from PyQt5.QtWidgets import QApplication,  QLineEdit, QWidget,  QFormLayout, QPushButton
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QMainWindow
+from _thread import *
 
 class Ui_MainWindow(object):
     """
@@ -13,7 +14,7 @@ class Ui_MainWindow(object):
     """
     def setupUi(self, MainWindow):
         self.setWindowTitle('Клиент')
-        self.setFixedSize(280, 200)
+        self.setFixedSize(280, 220)
         # Set the central widget and the general layout
         self.generalLayout = QVBoxLayout()
         self._centralWidget = QWidget(self)
@@ -24,6 +25,7 @@ class Ui_MainWindow(object):
         self.label_rate.setText('Cтавка \nдисконтирования')
         self.label_rate.move(20, 55)
         self.label_rate.setAlignment(Qt.AlignCenter)
+        
         # value rate line 
         self.value_line_edit_rate = QLineEdit(self)
         self.value_line_edit_rate.move(120, 60)
@@ -62,6 +64,12 @@ class Ui_MainWindow(object):
         self.display.resize(200, 32)
         self.display.setAlignment(Qt.AlignLeft)
         self.display.setReadOnly(True)
+
+        # Предупреждение о диапазоне
+        self.warning = QLabel(self)
+        self.warning.setText('Диапазон:\nГод = [2020,2050], Ставка = [0,1]')
+        self.warning.move(30, 170)
+        self.warning.resize(200, 40)
 
 class EchoClientProtocol(Setting):
     """
@@ -111,6 +119,7 @@ class main_window(QMainWindow, Ui_MainWindow):
         self.value_line_edit_rate.textChanged.connect(self.line_edit_rate_handler)
         self.build_protocol()
         
+        
     def build_protocol(self):
         """
         Создание протокола соединения с сервером
@@ -159,7 +168,7 @@ class main_window(QMainWindow, Ui_MainWindow):
         Обработчик для строки с ставкой дисконтирования
         """
         try:
-            if -1 <= float(self.value_line_edit_rate.text()) <= 1:
+            if 0 <= float(self.value_line_edit_rate.text()) <= 1:
                 self.button.setEnabled(True)
             else:
                 self.button.setEnabled(False)
