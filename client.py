@@ -168,6 +168,7 @@ class main_window(QMainWindow, Ui_MainWindow):
         Обработчик для строки с ставкой дисконтирования
         """
         try:
+            self.value_line_edit_rate.setText(self.value_line_edit_rate.text().replace(',','.'))
             if 0 <= float(self.value_line_edit_rate.text()) <= 1:
                 self.button.setEnabled(True)
             else:
